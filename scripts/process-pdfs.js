@@ -38,6 +38,23 @@ const hebrewStatusMap = {
   'הושלם': 'COMPLETED',
   'נמצא ליקוי': 'DEFECT',
   'תוקן': 'HANDLED',
+  // Additional statuses found in PDFs
+  'קיימים אי תאומים': 'DEFECT',
+  'קיימים אי תיאומים': 'DEFECT',
+  'אי תאומים': 'DEFECT',
+  'אי תיאומים': 'DEFECT',
+  'יש הערות': 'DEFECT',
+  'בוצע - יש הערות': 'DEFECT',
+  'בוצע - יש ליקויים': 'DEFECT',
+  'בוצע - נמצאו אי תאומים': 'DEFECT',
+  'בוצע - נמצאו אי תיאומים': 'DEFECT',
+  'נמצאו אי תאומים': 'DEFECT',
+  'נמצאו אי תיאומים': 'DEFECT',
+  'בוצע חלקי': 'IN_PROGRESS',
+  'לטיפול': 'PENDING',
+  'נדרש מעקב': 'PENDING',
+  'נדרש ביצוע': 'PENDING',
+  'בוצע עם הערות': 'DEFECT',
 };
 
 // Category mapping
@@ -79,6 +96,42 @@ function normalizeCategory(hebrewCategory) {
   }
   console.warn(`Unknown category: "${hebrewCategory}", defaulting to GENERAL`);
   return 'GENERAL';
+}
+
+function parseDate(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return null;
+  
+  const trimmed = dateStr.trim();
+  
+  // Skip dates that contain status text like "תקין - 17.9.25"
+  if (trimmed.includes('תקין') || trimmed.includes('לא תקין') || trimmed.includes('קיימים')) {
+    return null;
+  }
+  
+  // Try ISO format first (YYYY-MM-DD)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const date = new Date(trimmed);
+    if (!isNaN(date.getTime())) return date;
+  }
+  
+  // Try DD.MM.YY format (e.g., "1.7.25" -> 2025-07-01)
+  const ddmmyy = trimmed.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/);
+  if (ddmmyy) {
+    let day = parseInt(ddmmyy[1]);
+    let month = parseInt(ddmmyy[2]) - 1; // JS months are 0-indexed
+    let year = parseInt(ddmmyy[3]);
+    if (year < 100) year += 2000; // Convert YY to YYYY
+    const date = new Date(year, month, day);
+    if (!isNaN(date.getTime())) return date;
+  }
+  
+  // Try generic Date parsing
+  const date = new Date(trimmed);
+  if (!isNaN(date.getTime())) return date;
+  
+  // Invalid date
+  console.warn(`Invalid date format: "${dateStr}", skipping`);
+  return null;
 }
 
 const EXTRACTION_PROMPT = `You are analyzing a Hebrew construction progress report PDF for a TAMA 38/2 urban renewal project at Mosinzon 5, Tel Aviv.
@@ -138,63 +191,90 @@ Return ONLY valid JSON, no explanations. Example structure:
   "progressTracking": []
 }`;
 
-async function extractPdfData(pdfPath) {
+async function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function extractPdfData(pdfPath, retries = 3) {
   const absolutePath = path.resolve(pdfPath);
   const pdfBuffer = fs.readFileSync(absolutePath);
   const base64Pdf = pdfBuffer.toString('base64');
 
   console.log(`Processing PDF: ${path.basename(pdfPath)}`);
 
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 8192,
-    messages: [
-      {
-        role: 'user',
-        content: [
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8192,
+        messages: [
           {
-            type: 'document',
-            source: {
-              type: 'base64',
-              media_type: 'application/pdf',
-              data: base64Pdf,
-            },
-          },
-          {
-            type: 'text',
-            text: EXTRACTION_PROMPT,
+            role: 'user',
+            content: [
+              {
+                type: 'document',
+                source: {
+                  type: 'base64',
+                  media_type: 'application/pdf',
+                  data: base64Pdf,
+                },
+              },
+              {
+                type: 'text',
+                text: EXTRACTION_PROMPT,
+              },
+            ],
           },
         ],
-      },
-    ],
-  });
+      });
+      
+      // Success - process response
+      const textContent = response.content.find((c) => c.type === 'text');
+      if (!textContent || textContent.type !== 'text') {
+        throw new Error('No text response from Claude');
+      }
 
-  const textContent = response.content.find((c) => c.type === 'text');
-  if (!textContent || textContent.type !== 'text') {
-    throw new Error('No text response from Claude');
-  }
+      let extractedData;
+      try {
+        const codeBlockMatch = textContent.text.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+        if (codeBlockMatch) {
+          extractedData = JSON.parse(codeBlockMatch[1]);
+        } else {
+          const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
+          if (!jsonMatch) throw new Error('No JSON found in response');
+          extractedData = JSON.parse(jsonMatch[0]);
+        }
+      } catch (parseError) {
+        console.error('Failed to parse Claude response:', textContent.text.substring(0, 500));
+        throw new Error(`Failed to parse extraction result: ${parseError.message}`);
+      }
 
-  let extractedData;
-  try {
-    const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('No JSON found in response');
-    extractedData = JSON.parse(jsonMatch[0]);
-  } catch (parseError) {
-    console.error('Failed to parse Claude response:', textContent.text);
-    throw new Error(`Failed to parse extraction result: ${parseError}`);
-  }
+      if (!extractedData.reportDate) {
+        const filename = path.basename(pdfPath);
+        const dateMatch = filename.match(/(\d{4}-\d{2}-\d{2})/);
+        if (dateMatch) {
+          extractedData.reportDate = dateMatch[1];
+        } else {
+          throw new Error('Could not determine report date');
+        }
+      }
 
-  if (!extractedData.reportDate) {
-    const filename = path.basename(pdfPath);
-    const dateMatch = filename.match(/(\d{4}-\d{2}-\d{2})/);
-    if (dateMatch) {
-      extractedData.reportDate = dateMatch[1];
-    } else {
-      throw new Error('Could not determine report date');
+      return extractedData;
+      
+    } catch (error) {
+      if (error.status === 429 && attempt < retries) {
+        // Rate limit - wait and retry
+        const retryAfter = error.headers?.get('retry-after') || 60;
+        const waitTime = Math.max(parseInt(retryAfter) * 1000, 60000); // At least 60 seconds
+        console.log(`Rate limited. Waiting ${waitTime/1000}s before retry ${attempt + 1}/${retries}...`);
+        await sleep(waitTime);
+        continue;
+      }
+      throw error;
     }
   }
-
-  return extractedData;
+  
+  throw new Error('Max retries exceeded');
 }
 
 async function testConnection() {
@@ -299,7 +379,13 @@ async function processPdf(filePath, projectId) {
 
       if (aptData.inspectionDates) {
         for (const [category, dateStr] of Object.entries(aptData.inspectionDates)) {
-          const inspectionDate = dateStr ? new Date(dateStr) : null;
+          const inspectionDate = parseDate(dateStr);
+          // Skip if date is invalid or null
+          if (!inspectionDate) {
+            console.warn(`Skipping invalid inspection date for ${category}: "${dateStr}"`);
+            continue;
+          }
+          
           await prisma.inspection.upsert({
             where: {
               reportId_apartmentId_category: {
@@ -341,7 +427,12 @@ async function processPdf(filePath, projectId) {
       const apartmentId = apartmentMap.get(tracking.apartmentNumber);
       if (!apartmentId) continue;
 
-      const inspectionDate = tracking.inspectionDate ? new Date(tracking.inspectionDate) : null;
+      const inspectionDate = parseDate(tracking.inspectionDate);
+      // Skip if no valid date
+      if (!inspectionDate) {
+        console.warn(`Skipping tracking with invalid date: "${tracking.inspectionDate}"`);
+        continue;
+      }
 
       await prisma.inspection.upsert({
         where: {
@@ -392,7 +483,9 @@ async function processAllPdfs() {
     results.push(result);
 
     if (result.success && result.workItemsCreated > 0) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Wait 30 seconds between successful PDFs to avoid rate limits
+      console.log('Waiting 30s before next PDF to avoid rate limits...');
+      await new Promise((resolve) => setTimeout(resolve, 30000));
     }
   }
 

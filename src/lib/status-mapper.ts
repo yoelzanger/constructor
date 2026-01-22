@@ -26,6 +26,23 @@ const hebrewStatusMap: Record<string, WorkStatus> = {
   'הושלם': WorkStatus.COMPLETED,
   'נמצא ליקוי': WorkStatus.DEFECT,
   'תוקן': WorkStatus.HANDLED,
+  // Additional statuses found in PDFs
+  'קיימים אי תאומים': WorkStatus.DEFECT,
+  'קיימים אי תיאומים': WorkStatus.DEFECT,
+  'אי תאומים': WorkStatus.DEFECT,
+  'אי תיאומים': WorkStatus.DEFECT,
+  'יש הערות': WorkStatus.DEFECT,
+  'בוצע - יש הערות': WorkStatus.DEFECT,
+  'בוצע - יש ליקויים': WorkStatus.DEFECT,
+  'בוצע - נמצאו אי תאומים': WorkStatus.DEFECT,
+  'בוצע - נמצאו אי תיאומים': WorkStatus.DEFECT,
+  'נמצאו אי תאומים': WorkStatus.DEFECT,
+  'נמצאו אי תיאומים': WorkStatus.DEFECT,
+  'בוצע חלקי': WorkStatus.IN_PROGRESS,
+  'לטיפול': WorkStatus.PENDING,
+  'נדרש מעקב': WorkStatus.PENDING,
+  'נדרש ביצוע': WorkStatus.PENDING,
+  'בוצע עם הערות': WorkStatus.DEFECT,
 };
 
 export function normalizeStatus(hebrewStatus: string): WorkStatus {

@@ -1,8 +1,17 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import { prisma } from './db';
 import { extractPdfData } from './claude';
 import { normalizeStatus, normalizeCategory } from './status-mapper';
+
+/**
+ * Compute SHA256 hash of a file for duplicate detection
+ */
+function computeFileHash(filePath: string): string {
+  const fileBuffer = fs.readFileSync(filePath);
+  return crypto.createHash('sha256').update(fileBuffer).digest('hex');
+}
 
 const APARTMENTS = ['1', '3', '5', '6', '7', '10', '11', '14'];
 const PDF_DIR = path.join(process.cwd(), 'data', 'pdfs');
@@ -56,19 +65,42 @@ export async function processPdf(
 ): Promise<ProcessingResult> {
   const fileName = path.basename(filePath);
 
-  // Check if already processed
-  const existing = await prisma.report.findUnique({
+  // Compute file hash for duplicate detection
+  const fileHash = computeFileHash(filePath);
+
+  // Check if already processed by filename
+  const existingByName = await prisma.report.findUnique({
     where: { fileName },
   });
 
-  if (existing?.processed) {
+  if (existingByName?.processed) {
     console.log(`Skipping already processed: ${fileName}`);
     return {
       success: true,
       fileName,
-      reportId: existing.id,
+      reportId: existingByName.id,
       workItemsCreated: 0,
       inspectionsCreated: 0,
+    };
+  }
+
+  // Check if a report with the same content (hash) already exists
+  const existingByHash = await prisma.report.findFirst({
+    where: { 
+      fileHash,
+      processed: true,
+    },
+  });
+
+  if (existingByHash) {
+    console.log(`Skipping duplicate content: ${fileName} (same as ${existingByHash.fileName})`);
+    return {
+      success: true,
+      fileName,
+      reportId: existingByHash.id,
+      workItemsCreated: 0,
+      inspectionsCreated: 0,
+      error: `Duplicate of ${existingByHash.fileName}`,
     };
   }
 
@@ -89,6 +121,7 @@ export async function processPdf(
         projectId,
         fileName,
         filePath,
+        fileHash,
         reportDate,
         inspector: extractedData.inspector,
         rawExtraction: JSON.stringify(extractedData),
@@ -96,6 +129,7 @@ export async function processPdf(
       },
       update: {
         reportDate,
+        fileHash,
         inspector: extractedData.inspector,
         rawExtraction: JSON.stringify(extractedData),
       },

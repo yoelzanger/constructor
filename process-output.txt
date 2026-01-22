@@ -1,0 +1,66 @@
+﻿Construction Progress PDF Processor
+
+Found 17 unprocessed PDF(s):
+
+  - 2024-11-03 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+  - 2024-11-25 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+  - 2024-12-05 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+  - 2024-12-18 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+  - 2025-01-02 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+  - 2025-01-30 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+  - 2025-03-13 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ (1).pdf
+  - 2025-03-13 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+  - 2025-06-04 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+  - 2025-07-28 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+  - 2025-09-04 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+  - 2025-09-17 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+  - 2025-10-21 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+  - 2025-11-19 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+  - 2025-12-03 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+  - 2025-12-23 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+  - 2026-01-11 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+
+Created project: cmkpa097s000010kkxbekjagl
+Found 17 PDF files to process
+Processing PDF: 2024-11-03 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+node : Unknown category: "╫á╫Ö╫º╫ò╫û ╫₧╫û╫Æ╫á╫Ö╫¥", defaulting to GENERAL
+At C:\Users\yoel\AppData\Local\Temp\ps-script-c8f5aa1c-ae79-40f2-8a50-dd726342c388.ps1:76 char:1
++ node scripts/process-pdfs.js 2>&1 | Out-File -FilePath process-output ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Unknown categor...ting to GENERAL:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Unknown category: "╫¢╫Ö╫æ╫ò╫Ö ╫É╫⌐", defaulting to GENERAL
+Unknown category: "╫¢╫Ö╫æ╫ò╫Ö ╫É╫⌐", defaulting to GENERAL
+Unknown category: "╫É╫£╫ò╫₧╫Ö╫á╫Ö╫ò╫¥", defaulting to GENERAL
+Unknown category: "╫É╫£╫ò╫₧╫Ö╫á╫Ö╫ò╫¥", defaulting to GENERAL
+Unknown category: "╫¢╫Ö╫æ╫ò╫Ö ╫É╫⌐", defaulting to GENERAL
+Unknown category: "╫⌐╫ô╫¿╫ò╫Æ ╫É╫₧╫æ╫ÿ╫Ö╫ö", defaulting to GENERAL
+Unknown category: "╫æ╫ÿ╫Ö╫ù╫ò╫¬", defaulting to GENERAL
+Unknown status: "╫ö╫á╫ù╫Ö╫ö", defaulting to IN_PROGRESS
+Unknown status: "╫ö╫₧╫£╫ª╫ö", defaulting to IN_PROGRESS
+Unknown status: "╫ö╫₧╫£╫ª╫ö", defaulting to IN_PROGRESS
+Processed 2024-11-03 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf: 21 work items, 0 inspections
+Waiting 30s before next PDF to avoid rate limits...
+Processing PDF: 2024-11-25 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf
+Unknown category: "╫ö╫á╫₧╫¢╫¬ ╫¬╫º╫¿╫ö", defaulting to GENERAL
+Unknown category: "╫ö╫á╫₧╫¢╫¬ ╫¬╫º╫¿╫ö", defaulting to GENERAL
+Unknown status: "╫ö╫á╫ù╫Ö╫ö", defaulting to IN_PROGRESS
+Unknown status: "╫ö╫á╫ù╫Ö╫ö", defaulting to IN_PROGRESS
+Unknown status: "╫ö╫á╫ù╫Ö╫ö", defaulting to IN_PROGRESS
+Unknown category: "╫á╫Ö╫º╫ò╫û╫Ö╫¥", defaulting to GENERAL
+Unknown status: "╫ö╫á╫ù╫Ö╫ö", defaulting to IN_PROGRESS
+Unknown category: "╫á╫Ö╫º╫ò╫û╫Ö╫¥", defaulting to GENERAL
+Unknown status: "╫ö╫á╫ù╫Ö╫ö", defaulting to IN_PROGRESS
+Unknown category: "╫á╫Ö╫º╫ò╫û", defaulting to GENERAL
+Unknown status: "╫ö╫á╫ù╫Ö╫ö", defaulting to IN_PROGRESS
+Unknown category: "╫É╫¢╫í╫ò╫ƒ", defaulting to GENERAL
+Unknown status: "╫ö╫á╫ù╫Ö╫ö", defaulting to IN_PROGRESS
+Unknown category: "╫ù╫Ö╫û╫ò╫º", defaulting to GENERAL
+Unknown status: "╫ö╫á╫ù╫Ö╫ö", defaulting to IN_PROGRESS
+Unknown category: "╫æ╫ÿ╫Ö╫ù╫ò╫¬", defaulting to GENERAL
+Unknown status: "╫ö╫á╫ù╫Ö╫ö", defaulting to IN_PROGRESS
+Unknown category: "╫æ╫ÿ╫Ö╫ù╫ò╫¬", defaulting to GENERAL
+Unknown status: "╫ö╫á╫ù╫Ö╫ö", defaulting to IN_PROGRESS
+Processed 2024-11-25 - ╫₧╫ò╫í╫Ö╫á╫û╫ò╫ƒ 5 ╫¬╫£ ╫É╫æ╫Ö╫æ.pdf: 17 work items, 0 inspections
+Waiting 30s before next PDF to avoid rate limits...

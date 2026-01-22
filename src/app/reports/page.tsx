@@ -3,8 +3,16 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -19,6 +27,8 @@ import {
   AlertTriangle,
   Clock,
   Calendar,
+  Eye,
+  Download,
 } from 'lucide-react';
 
 interface ReportData {
@@ -37,6 +47,8 @@ export default function ReportsPage() {
   const [reports, setReports] = useState<ReportData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedReport, setSelectedReport] = useState<ReportData | null>(null);
+  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
 
   useEffect(() => {
     async function fetchReports() {
@@ -53,6 +65,21 @@ export default function ReportsPage() {
     }
     fetchReports();
   }, []);
+
+  const handleViewPdf = (report: ReportData) => {
+    setSelectedReport(report);
+    setPdfDialogOpen(true);
+  };
+
+  const handleDownloadPdf = (report: ReportData) => {
+    // Create a temporary link and trigger download
+    const link = document.createElement('a');
+    link.href = `/api/reports/${report.id}/pdf?download=true`;
+    link.download = report.fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   if (loading) {
     return <ReportsSkeleton />;
@@ -166,6 +193,7 @@ export default function ReportsPage() {
                   ליקויים
                 </TableHead>
                 <TableHead className="text-center">סה״כ</TableHead>
+                <TableHead className="text-center">פעולות</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -219,12 +247,74 @@ export default function ReportsPage() {
                   <TableCell className="text-center font-medium">
                     {report.total}
                   </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewPdf(report)}
+                        title="צפייה בדוח"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDownloadPdf(report)}
+                        title="הורדה"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* PDF Viewer Dialog */}
+      <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
+        <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              {selectedReport && (
+                <span>
+                  {new Date(selectedReport.reportDate).toLocaleDateString('he-IL', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </span>
+              )}
+            </DialogTitle>
+            <div className="flex items-center gap-2">
+              {selectedReport && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadPdf(selectedReport)}
+                >
+                  <Download className="h-4 w-4 ml-2" />
+                  הורדה
+                </Button>
+              )}
+              <DialogClose onClick={() => setPdfDialogOpen(false)} />
+            </div>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden rounded-b-lg">
+            {selectedReport && (
+              <iframe
+                src={`/api/reports/${selectedReport.id}/pdf`}
+                className="w-full h-full border-0"
+                title={`PDF Viewer - ${selectedReport.fileName}`}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {reports.length === 0 && (
         <Card>
