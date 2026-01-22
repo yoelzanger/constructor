@@ -200,12 +200,13 @@ export default function TimelinePage() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="date"
-                      tickFormatter={(value) =>
-                        new Date(value).toLocaleDateString('he-IL', {
-                          month: 'short',
-                          day: 'numeric',
-                        })
-                      }
+                      tickFormatter={(value) => {
+                        const d = new Date(value);
+                        const day = d.getDate().toString().padStart(2, '0');
+                        const month = (d.getMonth() + 1).toString().padStart(2, '0');
+                        const year = d.getFullYear().toString().slice(-2);
+                        return `${day}/${month}/${year}`;
+                      }}
                     />
                     <YAxis domain={[0, 100]} />
                     <Tooltip
@@ -272,12 +273,13 @@ export default function TimelinePage() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="date"
-                      tickFormatter={(value) =>
-                        new Date(value).toLocaleDateString('he-IL', {
-                          month: 'short',
-                          day: 'numeric',
-                        })
-                      }
+                      tickFormatter={(value) => {
+                        const d = new Date(value);
+                        const day = d.getDate().toString().padStart(2, '0');
+                        const month = (d.getMonth() + 1).toString().padStart(2, '0');
+                        const year = d.getFullYear().toString().slice(-2);
+                        return `${day}/${month}/${year}`;
+                      }}
                     />
                     <YAxis domain={[0, 100]} />
                     <Tooltip
@@ -342,12 +344,13 @@ export default function TimelinePage() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="date"
-                      tickFormatter={(value) =>
-                        new Date(value).toLocaleDateString('he-IL', {
-                          month: 'short',
-                          day: 'numeric',
-                        })
-                      }
+                      tickFormatter={(value) => {
+                        const d = new Date(value);
+                        const day = d.getDate().toString().padStart(2, '0');
+                        const month = (d.getMonth() + 1).toString().padStart(2, '0');
+                        const year = d.getFullYear().toString().slice(-2);
+                        return `${day}/${month}/${year}`;
+                      }}
                     />
                     <YAxis domain={[0, 100]} />
                     <Tooltip
