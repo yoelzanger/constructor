@@ -18,7 +18,12 @@ export async function GET() {
   try {
     // Get reports in chronological order for cumulative calculation
     const reports = await prisma.report.findMany({
-      where: { processed: true },
+      where: {
+        OR: [
+          { processed: true },
+          { hasErrors: true }
+        ]
+      },
       orderBy: { reportDate: 'asc' },
       include: {
         workItems: true,
@@ -28,7 +33,7 @@ export async function GET() {
     // Build cumulative progress at each report date
     const itemHistory = new Map<string, ItemHistory>();
     const categoriesEverSeen = new Set<string>();
-    
+
     // Store cumulative progress for each report
     const reportProgressMap = new Map<string, {
       progress: number;
@@ -41,36 +46,36 @@ export async function GET() {
     for (let reportIndex = 0; reportIndex < reports.length; reportIndex++) {
       const report = reports[reportIndex];
       const itemsInThisReport = new Set<string>();
-      
+
       // Update item history with items from this report
       for (const item of report.workItems) {
         const key = `${item.category}|${item.description}`;
         itemsInThisReport.add(key);
         categoriesEverSeen.add(item.category);
-        
+
         itemHistory.set(key, {
           category: item.category,
           status: item.status,
           notes: item.notes,
         });
       }
-      
+
       // Calculate cumulative progress with "disappeared = fixed" logic
       const catProgress = new Map<string, number>();
       const catItems = new Map<string, number[]>();
-      
+
       let completedCount = 0;
       let defectsCount = 0;
       let inProgressCount = 0;
-      
+
       for (const [key, item] of Array.from(itemHistory.entries())) {
         const isInCurrentReport = itemsInThisReport.has(key);
         let itemProgress: number;
-        
+
         if (isInCurrentReport) {
           // Item is in current report - use its status
           itemProgress = calculateItemProgressV2(item.status, item.notes, { isFirstTimeSeen: false }).progress;
-          
+
           // Count by status
           if (isNegativeStatus(item.status as WorkStatus) || hasNegativeNotes(item.notes)) {
             defectsCount++;
@@ -84,20 +89,20 @@ export async function GET() {
           itemProgress = PROGRESS_THRESHOLDS.ITEM_FIXED;
           completedCount++;
         }
-        
+
         const existing = catItems.get(item.category) || [];
         existing.push(itemProgress);
         catItems.set(item.category, existing);
       }
-      
+
       // Calculate category averages
       for (const [cat, items] of Array.from(catItems.entries())) {
         const avgProgress = Math.round(items.reduce((sum, p) => sum + p, 0) / items.length);
         catProgress.set(cat, avgProgress);
       }
-      
+
       const overallProgress = calculateOverallProgressWithAllCategories(catProgress, categoriesEverSeen);
-      
+
       reportProgressMap.set(report.id, {
         progress: overallProgress,
         totalCumulative: itemHistory.size,
@@ -117,7 +122,7 @@ export async function GET() {
         defectsCumulative: 0,
         inProgressCumulative: 0,
       };
-      
+
       // Get previous report's progress (if exists)
       let previousProgress = 0;
       if (index > 0) {
@@ -125,7 +130,7 @@ export async function GET() {
         const prevCumulative = reportProgressMap.get(prevReport.id);
         previousProgress = prevCumulative?.progress || 0;
       }
-      
+
       const progressDelta = cumulative.progress - previousProgress;
 
       return {
@@ -139,6 +144,10 @@ export async function GET() {
         completed: cumulative.completedCumulative,
         defects: cumulative.defectsCumulative,
         inProgress: cumulative.inProgressCumulative,
+        hasErrors: report.hasErrors,
+        errorDetails: report.errorDetails,
+        hasWarnings: report.hasWarnings,
+        warningDetails: report.warningDetails,
       };
     });
 

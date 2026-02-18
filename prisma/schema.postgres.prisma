@@ -4,10 +4,11 @@
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -34,10 +35,6 @@ model Report {
   inspector     String?      // Inspector name
   rawExtraction String?      // Raw JSON extraction from Claude
   processed     Boolean      @default(false)
-  hasErrors     Boolean      @default(false)  // If true, report parsed with errors/warnings but saved
-  errorDetails  String?      // JSON string of validation errors/warnings
-  hasWarnings   Boolean      @default(false)
-  warningDetails String?     // JSON string of validation warnings
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   workItems     WorkItem[]

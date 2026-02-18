@@ -41,7 +41,7 @@ try {
     # Start the server in a new invisible process
     # Using 'npm run start' for production build as it's more stable for background tasks
     # Ensure 'npm run build' has been run at least once!
-    Start-Process -FilePath "npm" -ArgumentList "run", "start" -WindowStyle Hidden -RedirectStandardOutput "$workingDir\server_out.log" -RedirectStandardError "$workingDir\server_err.log"
+    Start-Process -FilePath "npm.cmd" -ArgumentList "run", "start" -WindowStyle Hidden -RedirectStandardOutput "$workingDir\server_out.log" -RedirectStandardError "$workingDir\server_err.log"
     Log-Message "Server start command issued."
 }
 catch {

@@ -47,6 +47,7 @@ def generate_defect_history_chart(apt_num):
     JOIN Report r ON wi.reportId = r.id
     JOIN Apartment a ON wi.apartmentId = a.id
     WHERE a.number = '{apt_num}'
+    AND (r.hasErrors = 0 OR r.hasErrors IS NULL)
     ORDER BY r.reportDate ASC
     """
     

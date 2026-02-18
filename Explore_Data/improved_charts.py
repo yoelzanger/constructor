@@ -37,6 +37,7 @@ FROM WorkItem wi
 JOIN Report r ON wi.reportId = r.id
 JOIN Apartment a ON wi.apartmentId = a.id
 WHERE wi.apartmentId IS NOT NULL
+AND (r.hasErrors = 0 OR r.hasErrors IS NULL)
 ORDER BY r.reportDate ASC
 """
 
