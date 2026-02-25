@@ -24,6 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { ActivityLogTable } from '@/components/ActivityLogTable';
 
 interface ProgressConfig {
   categoryWeights: Record<string, number>;
@@ -588,6 +589,9 @@ export default function AdminPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Activity Log Section */}
+      <ActivityLogTable />
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { readFile } from 'fs/promises';
 import { processReport } from '@/lib/report-processing';
 
 export async function POST(
@@ -9,12 +8,10 @@ export async function POST(
 ) {
     try {
         const reportId = params.id;
-        const { force } = await request.json().catch(() => ({ force: false })); // Optional force flag from body
+        const { force } = await request.json().catch(() => ({ force: false }));
 
         // 1. Fetch existing report
-        const report = await prisma.report.findUnique({
-            where: { id: reportId },
-        });
+        const report = await prisma.report.findUnique({ where: { id: reportId } });
 
         if (!report) {
             return NextResponse.json({ error: 'Report not found' }, { status: 404 });
@@ -24,14 +21,16 @@ export async function POST(
             return NextResponse.json({ error: 'Report file path is missing' }, { status: 400 });
         }
 
-        // 2. Read file from disk
+        // 2. Fetch the PDF from Vercel Blob (filePath is now a blob URL)
         let fileBuffer: Buffer;
         try {
-            fileBuffer = await readFile(report.filePath);
+            const response = await fetch(report.filePath);
+            if (!response.ok) throw new Error(`Blob fetch failed: ${response.statusText}`);
+            fileBuffer = Buffer.from(await response.arrayBuffer());
         } catch (error) {
-            console.error('Error reading file:', error);
+            console.error('Error fetching file from blob:', error);
             return NextResponse.json(
-                { error: 'Failed to read report file from disk' },
+                { error: 'Failed to fetch report file from storage' },
                 { status: 500 }
             );
         }
@@ -43,7 +42,7 @@ export async function POST(
             report.projectId,
             report.filePath,
             force,
-            report.id // Pass existing ID to update it
+            report.id
         );
 
         return NextResponse.json({
@@ -69,3 +68,4 @@ export async function POST(
         );
     }
 }
+

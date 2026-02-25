@@ -1,10 +1,7 @@
-import { writeFile } from 'fs/promises';
 import { prisma } from '@/lib/db';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdf = require('pdf-parse');
 
 import {
     validateExtractedData,
@@ -393,7 +390,9 @@ class OpenAIAdapter implements AIProvider {
         if (mimeType === 'application/pdf') {
             try {
                 // Fix: Ensure we use the correct default export from pdf-parse
-                const parsed = await pdf(buffer);
+                // eslint-disable-next-line @typescript-eslint/no-require-imports
+                const pdfParse = require('pdf-parse/lib/pdf-parse');
+                const parsed = await pdfParse(buffer);
                 content = `Document Content:\n${parsed.text}\n\n`;
             } catch (e: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
                 console.error("OpenAI Adapter PDF Parse Error:", e);
@@ -592,9 +591,8 @@ export async function extractPdfData(pdfBuffer: Buffer): Promise<ExtractedReport
             console.log('JSON parse failed or result incomplete, attempting chunked extraction fallback...');
             // LOG THE ERROR for visibility but don't fail yet
             try {
-                // @ts-expect-error - just logging for debug
-                const debugPath = path.join(process.cwd(), 'upload_json_error_pre_chunk.log');
-                await writeFile(debugPath, `TIMESTAMP: ${new Date().toISOString()}\nERROR: ${parseError}\n\nRAW RESPONSE:\n${textContent}\n\n`);
+                // Log error to console (filesystem not available on Vercel)
+                console.error(`[Extraction] JSON parse failed. Error: ${parseError}`);
             } catch { }
 
             // Fallback to chunked extraction
@@ -639,7 +637,9 @@ export interface ProcessingResult {
  */
 async function checkForApartmentData(buffer: Buffer): Promise<boolean> {
     try {
-        const parsed = await pdf(buffer);
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const pdfParse = require('pdf-parse/lib/pdf-parse');
+        const parsed = await pdfParse(buffer);
         const text = parsed.text || '';
 
         // Check for "Apartment X" pattern in Hebrew
@@ -765,7 +765,7 @@ export async function processReport(
 
     // SPECIAL CHECK: Zero Items Heuristic
     // Calculate total items
-    let totalItems = (extractedData.apartments || []).reduce((sum, a) => sum + (a.workItems?.length || 0), 0) + (extractedData.developmentItems?.length || 0);
+    const totalItems = (extractedData.apartments || []).reduce((sum, a) => sum + (a.workItems?.length || 0), 0) + (extractedData.developmentItems?.length || 0);
 
     if (totalItems === 0) {
         if (heuristicHasApartments) {

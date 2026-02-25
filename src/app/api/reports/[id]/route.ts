@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { unlink } from 'fs/promises';
 import { existsSync } from 'fs';
+import { logActivity, getClientIp } from '@/lib/activity-logger';
 
 // GET - fetch single report details
 export async function GET(
@@ -10,7 +11,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    
+
     const report = await prisma.report.findUnique({
       where: { id },
       include: {
@@ -40,7 +41,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    
+
     // Find the report first
     const report = await prisma.report.findUnique({
       where: { id },
@@ -74,6 +75,18 @@ export async function DELETE(
         // Continue even if file deletion fails
       }
     }
+
+    // Log the activity
+    const ip = getClientIp(request.headers);
+    await logActivity({
+      activityType: 'delete',
+      description: `מחיקת דוח: ${report.fileName}`,
+      ipAddress: ip,
+      details: {
+        reportId: id,
+        fileName: report.fileName,
+      },
+    });
 
     return NextResponse.json({
       success: true,

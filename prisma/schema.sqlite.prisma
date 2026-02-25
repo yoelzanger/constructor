@@ -1,6 +1,4 @@
-// Construction Progress Tracking Database Schema
-// For TAMA 38/2 urban renewal project at Mosinzon 5, Tel Aviv
-
+// Temporary SQLite schema for local dev client generation
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -8,11 +6,10 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
-// Single project (Mosinzon 5)
 model Project {
   id          String      @id @default(cuid())
   name        String      @default("מוסינזון 5 תל אביב")
@@ -23,22 +20,21 @@ model Project {
   apartments  Apartment[]
 }
 
-// One report per PDF file
 model Report {
   id            String       @id @default(cuid())
   projectId     String
   project       Project      @relation(fields: [projectId], references: [id])
-  reportDate    DateTime     // Date of the inspection report
-  fileName      String       @unique // Original PDF filename
-  filePath      String       // Path to the PDF file
-  fileHash      String?      // SHA256 hash of file content for duplicate detection
-  inspector     String?      // Inspector name
-  rawExtraction String?      // Raw JSON extraction from Claude
+  reportDate    DateTime
+  fileName      String       @unique
+  filePath      String
+  fileHash      String?
+  inspector     String?
+  rawExtraction String?
   processed     Boolean      @default(false)
-  hasErrors     Boolean      @default(false)  // If true, report parsed with errors/warnings but saved
-  errorDetails  String?      // JSON string of validation errors/warnings
+  hasErrors     Boolean      @default(false)
+  errorDetails  String?
   hasWarnings   Boolean      @default(false)
-  warningDetails String?     // JSON string of validation warnings
+  warningDetails String?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   workItems     WorkItem[]
@@ -48,13 +44,12 @@ model Report {
   @@index([fileHash])
 }
 
-// 8 apartments tracked (1, 3, 5, 6, 7, 10, 11, 14)
 model Apartment {
   id          String       @id @default(cuid())
   projectId   String
   project     Project      @relation(fields: [projectId], references: [id])
-  number      String       // Apartment number (1, 3, 5, 6, 7, 10, 11, 14)
-  floor       Int?         // Floor number if known
+  number      String
+  floor       Int?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   workItems   WorkItem[]
@@ -63,20 +58,19 @@ model Apartment {
   @@unique([projectId, number])
 }
 
-// Individual tasks with status
 model WorkItem {
   id          String      @id @default(cuid())
   reportId    String
   report      Report      @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  apartmentId String?     // Null for site-level/development work
+  apartmentId String?
   apartment   Apartment?  @relation(fields: [apartmentId], references: [id])
-  category    String      // Work category (Electrical, Plumbing, etc.)
-  location    String?     // Specific location within apartment
-  description String      // Task description
-  status      String      // Status enum as string
-  notes       String?     // Additional notes
+  category    String
+  location    String?
+  description String
+  status      String
+  notes       String?
   hasPhoto    Boolean     @default(false)
-  photoNotes  String?     // Notes about what's shown in the photo (defects, issues)
+  photoNotes  String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -86,16 +80,15 @@ model WorkItem {
   @@index([status])
 }
 
-// Per-apartment inspection dates/status by category
 model Inspection {
   id              String    @id @default(cuid())
   reportId        String
   report          Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
   apartmentId     String
   apartment       Apartment @relation(fields: [apartmentId], references: [id])
-  category        String    // Inspection category
-  inspectionDate  DateTime? // Date of inspection for this category
-  status          String?   // Overall status for this category
+  category        String
+  inspectionDate  DateTime?
+  status          String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -103,27 +96,25 @@ model Inspection {
   @@index([apartmentId])
 }
 
-// Snapshot for rollback capability - stores state before upload operations
 model Snapshot {
   id          String    @id @default(cuid())
-  reason      String    // Why snapshot was created (e.g., "pre-upload: filename.pdf")
-  data        String    // JSON blob containing all reports, workItems, inspections
-  reportCount Int       // Number of reports at time of snapshot
+  reason      String
+  data        String
+  reportCount Int
   createdAt   DateTime  @default(now())
-  restoredAt  DateTime? // If this snapshot was used for rollback
-  
+  restoredAt  DateTime?
+
   @@index([createdAt])
 }
 
-// Activity log for auditing user actions
 model ActivityLog {
   id           String   @id @default(cuid())
   timestamp    DateTime @default(now())
-  activityType String   // "site_visit" | "upload" | "delete" | "rollback" | "config_change" | "snapshot"
-  description  String   // Human-readable description
-  ipAddress    String?  // Client IP address
-  city         String?  // City resolved from IP (via geolocation)
-  details      String?  // Optional JSON string for extra metadata
+  activityType String
+  description  String
+  ipAddress    String?
+  city         String?
+  details      String?
 
   @@index([timestamp])
 }

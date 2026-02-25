@@ -15,6 +15,7 @@ export const metadata: Metadata = {
 
 import { UploadProvider } from "@/context/UploadContext";
 import { UploadProgress } from "@/components/UploadProgress";
+import { VisitLogger } from "@/components/VisitLogger";
 
 export default function RootLayout({
   children,
@@ -32,6 +33,7 @@ export default function RootLayout({
             </main>
           </div>
           <UploadProgress />
+          <VisitLogger />
         </UploadProvider>
       </body>
     </html>
