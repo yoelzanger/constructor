@@ -21,14 +21,21 @@ export async function POST(
             return NextResponse.json({ error: 'Report file path is missing' }, { status: 400 });
         }
 
-        // 2. Fetch the PDF from Vercel Blob (filePath is now a blob URL)
+        // 2. Fetch the PDF (from Blob URL or local disk)
         let fileBuffer: Buffer;
         try {
-            const response = await fetch(report.filePath);
-            if (!response.ok) throw new Error(`Blob fetch failed: ${response.statusText}`);
-            fileBuffer = Buffer.from(await response.arrayBuffer());
+            if (report.filePath.startsWith('http')) {
+                // Fetch from Vercel Blob
+                const response = await fetch(report.filePath);
+                if (!response.ok) throw new Error(`Blob fetch failed: ${response.statusText}`);
+                fileBuffer = Buffer.from(await response.arrayBuffer());
+            } else {
+                // Read from local disk
+                const { readFile } = await import('fs/promises');
+                fileBuffer = await readFile(report.filePath);
+            }
         } catch (error) {
-            console.error('Error fetching file from blob:', error);
+            console.error('Error fetching file:', error);
             return NextResponse.json(
                 { error: 'Failed to fetch report file from storage' },
                 { status: 500 }

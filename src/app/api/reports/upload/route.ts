@@ -4,6 +4,9 @@ import { prisma } from '@/lib/db';
 import { isValidPdfBuffer } from '@/lib/upload-validation';
 import { processReport, extractDateFromFilename } from '@/lib/report-processing';
 import { logActivity, getClientIp } from '@/lib/activity-logger';
+import { writeFile, mkdir } from 'fs/promises';
+import { existsSync } from 'fs';
+import path from 'path';
 
 export async function POST(request: NextRequest) {
   let blobUrl: string | null = null;
@@ -59,12 +62,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // === Upload PDF to Vercel Blob ===
-    const blob = await put(`reports/${file.name}`, buffer, {
-      access: 'public',
-      contentType: 'application/pdf',
-    });
-    blobUrl = blob.url;
+    // === Upload PDF to Vercel Blob or Local Fallback ===
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const blob = await put(`reports/${file.name}`, buffer, {
+        access: 'public',
+        contentType: 'application/pdf',
+      });
+      blobUrl = blob.url;
+    } else {
+      // Local fallback for development
+      console.log('BLOB_READ_WRITE_TOKEN missing, using local storage fallback');
+      const PDF_DIR = path.join(process.cwd(), 'data', 'pdfs');
+      if (!existsSync(PDF_DIR)) {
+        await mkdir(PDF_DIR, { recursive: true });
+      }
+      const filePath = path.join(PDF_DIR, file.name);
+      await writeFile(filePath, buffer);
+      // In local mode, we use the absolute path as the identifier
+      blobUrl = filePath;
+    }
 
     // Get or create project
     let project = await prisma.project.findFirst();
@@ -88,8 +104,11 @@ export async function POST(request: NextRequest) {
     const result = await processReport(buffer, file.name, project.id, blobUrl, forceUpload);
 
     if (!result.success && result.requiresConfirmation) {
-      // Clean up blob if user needs to confirm first
-      try { await del(blobUrl); } catch { }
+      // Clean up if user needs to confirm first
+      if (process.env.BLOB_READ_WRITE_TOKEN && blobUrl) {
+        try { await del(blobUrl); } catch { }
+      }
+      // Note: we don't delete local files on confirmation request to keep things simple for dev
       blobUrl = null;
       return NextResponse.json(
         {
