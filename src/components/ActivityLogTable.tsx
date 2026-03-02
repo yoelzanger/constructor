@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ interface ActivityEntry {
     details: string | null;
 }
 
-const activityTypeConfig: Record<string, { label: string; icon: any; color: string }> = {
+const activityTypeConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
     site_visit: { label: 'ביקור באתר', icon: Eye, color: 'bg-blue-100 text-blue-800' },
     upload: { label: 'העלאת דוח', icon: FileText, color: 'bg-green-100 text-green-800' },
     delete: { label: 'מחיקת דוח', icon: Trash2, color: 'bg-red-100 text-red-800' },
@@ -33,7 +33,7 @@ export function ActivityLogTable() {
     const [hasMore, setHasMore] = useState(true);
     const LIMIT = 50;
 
-    const fetchLogs = async (isNew = false) => {
+    const fetchLogs = React.useCallback(async (isNew = false) => {
         try {
             setLoading(true);
             const offset = isNew ? 0 : page * LIMIT;
@@ -55,11 +55,11 @@ export function ActivityLogTable() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [page, LIMIT]);
 
     useEffect(() => {
         fetchLogs(true);
-    }, []);
+    }, [fetchLogs]);
 
     const formatDateTime = (dateStr: string) => {
         const d = new Date(dateStr);
