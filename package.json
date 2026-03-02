@@ -14,7 +14,8 @@
     "download-gmail": "node scripts/download-gmail-pdfs.js",
     "download-gmail:list": "node scripts/download-gmail-pdfs.js --list",
     "fix-report-dates": "node scripts/fix-report-dates.js",
-    "worker": "node scripts/worker.js"
+    "worker": "node scripts/worker.js",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
