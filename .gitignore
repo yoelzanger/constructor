@@ -65,3 +65,6 @@ process-output.txt
 *_output.txt
 debug_*.txt
 chart_output/
+
+.vercel
+.env*.local
