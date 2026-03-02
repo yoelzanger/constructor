@@ -17,7 +17,8 @@
 ## Step 2: Deploy to Vercel
 
 1. Go to [vercel.com/new](https://vercel.com/new).
-2. Click **"Import Git Repository"** and select `tombensim/constructor`.
+2. Click **"Import Git Repository"** and select `yoelzanger/constructor`.
+   > Make sure the connected repository in Project Settings > Git is strictly `yoelzanger/constructor`.
 3. Click **"Deploy"** — Vercel will build the project.
 
 ---
