@@ -63,7 +63,8 @@ export async function POST(request: NextRequest) {
     }
 
     // === Upload PDF to Vercel Blob or Local Fallback ===
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const token = process.env.BLOB_READ_WRITE_TOKEN?.trim() || '';
+    if (token && token !== 'undefined') {
       const blob = await put(`reports/${file.name}`, buffer, {
         access: 'public',
         contentType: 'application/pdf',
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
 
     if (!result.success && result.requiresConfirmation) {
       // Clean up if user needs to confirm first
-      if (process.env.BLOB_READ_WRITE_TOKEN && blobUrl) {
+      if (token && token !== 'undefined' && blobUrl) {
         try { await del(blobUrl); } catch { }
       }
       // Note: we don't delete local files on confirmation request to keep things simple for dev
@@ -148,7 +149,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error uploading report:', error);
     // Clean up blob on unhandled error
-    if (blobUrl) {
+    const token = process.env.BLOB_READ_WRITE_TOKEN?.trim() || '';
+    if (token && token !== 'undefined' && blobUrl) {
       try { await del(blobUrl); } catch { }
     }
     return NextResponse.json(
