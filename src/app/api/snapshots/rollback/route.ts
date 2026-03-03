@@ -1,3 +1,4 @@
+﻿export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { restoreSnapshot, getSnapshotDetails } from '@/lib/snapshot';
 import { logActivity, getClientIp } from '@/lib/activity-logger';

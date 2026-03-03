@@ -1,3 +1,4 @@
+﻿export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { put, del } from '@vercel/blob';
 import { prisma } from '@/lib/db';

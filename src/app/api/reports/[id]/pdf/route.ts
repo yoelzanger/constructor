@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import * as fs from 'fs';
@@ -9,7 +10,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    
+
     // Get report from database
     const report = await prisma.report.findUnique({
       where: { id },

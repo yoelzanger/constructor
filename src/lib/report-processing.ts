@@ -10,16 +10,30 @@ import {
 } from '@/lib/upload-validation';
 import { createSnapshot, cleanupOldSnapshots } from '@/lib/snapshot';
 
-// Initialize Providers
-const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
-});
+// Lazy Initialize Providers
+let anthropicInstance: Anthropic | null = null;
+function getAnthropic() {
+    if (!anthropicInstance) {
+        anthropicInstance = new Anthropic({
+            apiKey: process.env.ANTHROPIC_API_KEY || 'dummy-key-for-build',
+        });
+    }
+    return anthropicInstance;
+}
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+let openaiInstance: OpenAI | null = null;
+function getOpenAI() {
+    if (!openaiInstance) {
+        openaiInstance = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY || 'dummy-key-for-build',
+        });
+    }
+    return openaiInstance;
+}
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '');
+function getGenAI() {
+    return new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || 'dummy-key-for-build');
+}
 
 // Status mapping
 const hebrewStatusMap: Record<string, string> = {
@@ -365,7 +379,7 @@ class AnthropicAdapter implements AIProvider {
             throw new Error('Anthropic adapter currently supports only PDF');
         }
         const base64Data = buffer.toString('base64');
-        const response = await anthropic.messages.create({
+        const response = await getAnthropic().messages.create({
             model: 'claude-3-5-sonnet-20240620', // Explicit version
             max_tokens: 8192,
             messages: [{
@@ -404,7 +418,7 @@ class OpenAIAdapter implements AIProvider {
             content = "Unsupported Mime Type for OpenAI Direct Raw";
         }
 
-        const response = await openai.chat.completions.create({
+        const response = await getOpenAI().chat.completions.create({
             model: "gpt-4o",
             messages: [
                 { role: "system", content: "You are a helpful assistant that extracts data from construction reports. Output valid JSON only." },
@@ -423,7 +437,7 @@ class GeminiAdapter implements AIProvider {
 
     async extract(prompt: string, buffer: Buffer, mimeType: string): Promise<string> {
         // Updated to gemini-1.5-flash
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = getGenAI().getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const base64Data = buffer.toString('base64');
         const result = await model.generateContent([
