@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     const token = process.env.BLOB_READ_WRITE_TOKEN?.trim() || '';
     if (token && token !== 'undefined') {
       const blob = await put(`reports/${file.name}`, buffer, {
-        access: 'public',
+        access: 'private',
         contentType: 'application/pdf',
       });
       blobUrl = blob.url;

@@ -1,7 +1,10 @@
+import { writeFile } from 'fs/promises';
 import { prisma } from '@/lib/db';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pdf = require('pdf-parse');
 
 import {
     validateExtractedData,
@@ -10,7 +13,6 @@ import {
 } from '@/lib/upload-validation';
 import { createSnapshot, cleanupOldSnapshots } from '@/lib/snapshot';
 
-// Lazy Initialize Providers
 let anthropicInstance: Anthropic | null = null;
 function getAnthropic() {
     if (!anthropicInstance) {
@@ -379,8 +381,8 @@ class AnthropicAdapter implements AIProvider {
             throw new Error('Anthropic adapter currently supports only PDF');
         }
         const base64Data = buffer.toString('base64');
-        const response = await getAnthropic().messages.create({
-            model: 'claude-3-5-sonnet-20240620', // Explicit version
+        const response = await getAnthropic().beta.messages.create({
+            model: 'claude-3-5-sonnet-latest',
             max_tokens: 8192,
             messages: [{
                 role: 'user',
@@ -388,7 +390,8 @@ class AnthropicAdapter implements AIProvider {
                     { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Data } },
                     { type: 'text', text: prompt }
                 ]
-            }]
+            }],
+            betas: ['pdfs-2024-09-25']
         });
         return response.content.find(c => c.type === 'text')?.text || '';
     }
@@ -404,9 +407,7 @@ class OpenAIAdapter implements AIProvider {
         if (mimeType === 'application/pdf') {
             try {
                 // Fix: Ensure we use the correct default export from pdf-parse
-                // eslint-disable-next-line @typescript-eslint/no-require-imports
-                const pdfParse = require('pdf-parse/lib/pdf-parse');
-                const parsed = await pdfParse(buffer);
+                const parsed = await pdf(buffer);
                 content = `Document Content:\n${parsed.text}\n\n`;
             } catch (e: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
                 console.error("OpenAI Adapter PDF Parse Error:", e);
@@ -436,8 +437,8 @@ class GeminiAdapter implements AIProvider {
     name = 'Gemini (Flash 1.5)';
 
     async extract(prompt: string, buffer: Buffer, mimeType: string): Promise<string> {
-        // Updated to gemini-1.5-flash
-        const model = getGenAI().getGenerativeModel({ model: "gemini-1.5-flash" });
+        // Ensure we use the latest highly capable multi-modal flash model
+        const model = getGenAI().getGenerativeModel({ model: "gemini-2.0-flash" });
 
         const base64Data = buffer.toString('base64');
         const result = await model.generateContent([
@@ -455,9 +456,9 @@ class GeminiAdapter implements AIProvider {
 }
 
 const providers: AIProvider[] = [
-    new AnthropicAdapter(),      // Primary
-    new OpenAIAdapter(),         // Secondary (Reliable Text Fallback)
-    new GeminiAdapter()          // Tertiary (Cost effective, large context)
+    new AnthropicAdapter(),      // Primary (Claude 3.5 Sonnet w/ native PDF parsing)
+    new GeminiAdapter(),         // Secondary (Gemini 2.0 Flash w/ native PDF parsing)
+    new OpenAIAdapter()          // Tertiary (Fallback to weak plain-text parsing if keys run out)
 ];
 
 // --- Extraction Logic ---
@@ -605,8 +606,9 @@ export async function extractPdfData(pdfBuffer: Buffer): Promise<ExtractedReport
             console.log('JSON parse failed or result incomplete, attempting chunked extraction fallback...');
             // LOG THE ERROR for visibility but don't fail yet
             try {
-                // Log error to console (filesystem not available on Vercel)
-                console.error(`[Extraction] JSON parse failed. Error: ${parseError}`);
+                // @ts-expect-error - just logging for debug
+                const debugPath = path.join(process.cwd(), 'upload_json_error_pre_chunk.log');
+                await writeFile(debugPath, `TIMESTAMP: ${new Date().toISOString()}\nERROR: ${parseError}\n\nRAW RESPONSE:\n${textContent}\n\n`);
             } catch { }
 
             // Fallback to chunked extraction
@@ -651,9 +653,7 @@ export interface ProcessingResult {
  */
 async function checkForApartmentData(buffer: Buffer): Promise<boolean> {
     try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const pdfParse = require('pdf-parse/lib/pdf-parse');
-        const parsed = await pdfParse(buffer);
+        const parsed = await pdf(buffer);
         const text = parsed.text || '';
 
         // Check for "Apartment X" pattern in Hebrew
