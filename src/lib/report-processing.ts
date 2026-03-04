@@ -381,8 +381,8 @@ class AnthropicAdapter implements AIProvider {
             throw new Error('Anthropic adapter currently supports only PDF');
         }
         const base64Data = buffer.toString('base64');
-        const response = await getAnthropic().beta.messages.create({
-            model: 'claude-3-5-sonnet-latest',
+        const response = await getAnthropic().messages.create({
+            model: 'claude-3-haiku-20240307',
             max_tokens: 8192,
             messages: [{
                 role: 'user',
@@ -390,8 +390,7 @@ class AnthropicAdapter implements AIProvider {
                     { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Data } },
                     { type: 'text', text: prompt }
                 ]
-            }],
-            betas: ['pdfs-2024-09-25']
+            }]
         });
         return response.content.find(c => c.type === 'text')?.text || '';
     }
@@ -437,8 +436,8 @@ class GeminiAdapter implements AIProvider {
     name = 'Gemini (Flash 1.5)';
 
     async extract(prompt: string, buffer: Buffer, mimeType: string): Promise<string> {
-        // Ensure we use the latest highly capable multi-modal flash model
-        const model = getGenAI().getGenerativeModel({ model: "gemini-2.0-flash" });
+        // Must stay on gemini-1.5-flash — 2.0-flash exceeds free-tier quota limits
+        const model = getGenAI().getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const base64Data = buffer.toString('base64');
         const result = await model.generateContent([
