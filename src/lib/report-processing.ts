@@ -33,8 +33,8 @@ function getOpenAI() {
     return openaiInstance;
 }
 
-function getGenAI() {
-    return new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || 'dummy-key-for-build');
+function getGenAI(apiKey?: string) {
+    return new GoogleGenerativeAI(apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || 'dummy-key-for-build');
 }
 
 // Status mapping
@@ -432,12 +432,37 @@ class OpenAIAdapter implements AIProvider {
     }
 }
 
-class GeminiAdapter implements AIProvider {
-    name = 'Gemini (Flash 1.5)';
+class GeminiProAdapter implements AIProvider {
+    name = 'Gemini (Pro 1.5 Primary)';
 
     async extract(prompt: string, buffer: Buffer, mimeType: string): Promise<string> {
-        // Must stay on gemini-1.5-flash — 2.0-flash exceeds free-tier quota limits
-        const model = getGenAI().getGenerativeModel({ model: "gemini-1.5-flash" });
+        const genAI = getGenAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+
+        const base64Data = buffer.toString('base64');
+        const result = await model.generateContent([
+            prompt,
+            {
+                inlineData: {
+                    data: base64Data,
+                    mimeType: mimeType
+                }
+            }
+        ]);
+
+        return result.response.text();
+    }
+}
+
+class GeminiBackupAdapter implements AIProvider {
+    name = 'Gemini (Flash 1.5 Backup)';
+
+    async extract(prompt: string, buffer: Buffer, mimeType: string): Promise<string> {
+        if (!process.env.GEMINI_API_KEY_2) {
+            throw new Error("No secondary GEMINI_API_KEY_2 configured in .env");
+        }
+        const genAI = getGenAI(process.env.GEMINI_API_KEY_2);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const base64Data = buffer.toString('base64');
         const result = await model.generateContent([
@@ -455,9 +480,10 @@ class GeminiAdapter implements AIProvider {
 }
 
 const providers: AIProvider[] = [
-    new AnthropicAdapter(),      // Primary (Claude 3.5 Sonnet w/ native PDF parsing)
-    new GeminiAdapter(),         // Secondary (Gemini 2.0 Flash w/ native PDF parsing)
-    new OpenAIAdapter()          // Tertiary (Fallback to weak plain-text parsing if keys run out)
+    new AnthropicAdapter(),      // Primary (Claude)
+    new GeminiProAdapter(),      // Secondary (Primary Gemini Pro)
+    new GeminiBackupAdapter(),   // Tertiary (Backup Gemini Key)
+    new OpenAIAdapter()          // Quaternary (Fallback to weak plain-text parsing if keys run out)
 ];
 
 // --- Extraction Logic ---
