@@ -1,6 +1,5 @@
 import { writeFile } from 'fs/promises';
 import { prisma } from '@/lib/db';
-import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -13,15 +12,7 @@ import {
 } from '@/lib/upload-validation';
 import { createSnapshot, cleanupOldSnapshots } from '@/lib/snapshot';
 
-let anthropicInstance: Anthropic | null = null;
-function getAnthropic() {
-    if (!anthropicInstance) {
-        anthropicInstance = new Anthropic({
-            apiKey: process.env.ANTHROPIC_API_KEY || 'dummy-key-for-build',
-        });
-    }
-    return anthropicInstance;
-}
+// Anthropic removed as free Haiku does not support PDF processing
 
 let openaiInstance: OpenAI | null = null;
 function getOpenAI() {
@@ -373,28 +364,7 @@ interface AIProvider {
     extract(prompt: string, buffer: Buffer, mimeType: string): Promise<string>;
 }
 
-class AnthropicAdapter implements AIProvider {
-    name = 'Anthropic (Claude)';
-
-    async extract(prompt: string, buffer: Buffer, mimeType: string): Promise<string> {
-        if (mimeType !== 'application/pdf') {
-            throw new Error('Anthropic adapter currently supports only PDF');
-        }
-        const base64Data = buffer.toString('base64');
-        const response = await getAnthropic().messages.create({
-            model: 'claude-3-haiku-20240307',
-            max_tokens: 8192,
-            messages: [{
-                role: 'user',
-                content: [
-                    { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Data } },
-                    { type: 'text', text: prompt }
-                ]
-            }]
-        });
-        return response.content.find(c => c.type === 'text')?.text || '';
-    }
-}
+// AnthropicAdapter removed
 
 class OpenAIAdapter implements AIProvider {
     name = 'OpenAI (GPT-4o)';
@@ -433,11 +403,12 @@ class OpenAIAdapter implements AIProvider {
 }
 
 class GeminiProAdapter implements AIProvider {
-    name = 'Gemini (Pro 1.5 Primary)';
+    name = 'Gemini (Pro 3.1 Primary)';
 
     async extract(prompt: string, buffer: Buffer, mimeType: string): Promise<string> {
         const genAI = getGenAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+        // Migrated from 1.5 to 3.1 generation
+        const model = genAI.getGenerativeModel({ model: "gemini-3.1-pro-preview" });
 
         const base64Data = buffer.toString('base64');
         const result = await model.generateContent([
@@ -455,14 +426,16 @@ class GeminiProAdapter implements AIProvider {
 }
 
 class GeminiBackupAdapter implements AIProvider {
-    name = 'Gemini (Flash 1.5 Backup)';
+    name = 'Gemini (Flash 2.5 Backup)';
 
     async extract(prompt: string, buffer: Buffer, mimeType: string): Promise<string> {
-        if (!process.env.GEMINI_API_KEY_2) {
+        const backupKey = process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY2;
+        if (!backupKey) {
             throw new Error("No secondary GEMINI_API_KEY_2 configured in .env");
         }
-        const genAI = getGenAI(process.env.GEMINI_API_KEY_2);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const genAI = getGenAI(backupKey);
+        // Migrated from 1.5 to 2.5 generation
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const base64Data = buffer.toString('base64');
         const result = await model.generateContent([
@@ -480,10 +453,9 @@ class GeminiBackupAdapter implements AIProvider {
 }
 
 const providers: AIProvider[] = [
-    new AnthropicAdapter(),      // Primary (Claude)
-    new GeminiProAdapter(),      // Secondary (Primary Gemini Pro)
-    new GeminiBackupAdapter(),   // Tertiary (Backup Gemini Key)
-    new OpenAIAdapter()          // Quaternary (Fallback to weak plain-text parsing if keys run out)
+    new GeminiProAdapter(),      // Primary (Primary Gemini Pro)
+    new GeminiBackupAdapter(),   // Secondary (Backup Gemini Key)
+    new OpenAIAdapter()          // Tertiary (Fallback to weak plain-text parsing if keys run out)
 ];
 
 // --- Extraction Logic ---
