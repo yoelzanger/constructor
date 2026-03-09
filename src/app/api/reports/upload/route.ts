@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
         access: 'private',
         contentType: 'application/pdf',
         token,
+        addRandomSuffix: true,
       });
       blobUrl = blob.url;
     } else {
