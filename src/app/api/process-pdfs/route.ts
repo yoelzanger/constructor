@@ -157,7 +157,9 @@ export async function GET(request: NextRequest) {
         for (const report of unprocessed) {
             try {
                 // Fetch the PDF from Vercel Blob using the stored URL
-                const pdfResponse = await fetch(report.filePath);
+                const pdfResponse = await fetch(report.filePath, {
+                    headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` }
+                });
                 if (!pdfResponse.ok) {
                     throw new Error(`Failed to fetch PDF from blob: ${pdfResponse.statusText}`);
                 }

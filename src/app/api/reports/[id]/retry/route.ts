@@ -26,8 +26,12 @@ export async function POST(
         let fileBuffer: Buffer;
         try {
             if (report.filePath.startsWith('http')) {
-                // Fetch from Vercel Blob
-                const response = await fetch(report.filePath);
+                // Fetch from Vercel Blob with token for private store access
+                const response = await fetch(report.filePath, {
+                    headers: {
+                        Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`,
+                    },
+                });
                 if (!response.ok) throw new Error(`Blob fetch failed: ${response.statusText}`);
                 fileBuffer = Buffer.from(await response.arrayBuffer());
             } else {

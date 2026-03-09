@@ -4,7 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdf = require('pdf-parse');
+const pdf = require('pdf-parse/lib/pdf-parse.js');
 
 import {
     validateExtractedData,
